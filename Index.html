@@ -1,1 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movie Ticket Booking</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    header {
+      background-color: #333;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+    .container {
+      padding: 20px;
+    }
+    .login-form, .booking-section {
+      max-width: 400px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input[type="text"], input[type="password"], select, input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .movie-time, .pricing, .confirmation {
+      margin: 10px 0;
+    }
+    .exit-button {
+      background-color: #dc3545;
+    }
+    .exit-button:hover {
+      background-color: #c82333;
+    }
+    .seats-view {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .seat {
+      width: 50px;
+      height: 50px;
+      background-color: #ccc;
+      text-align: center;
+      line-height: 50px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .booked {
+      background-color: #6c757d;
+      color: white;
+      cursor: not-allowed;
+    }
+    .selected {
+      background-color: #28a745;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Movie Ticket Booking</h1>
+  </header>
 
+  <div class="container">
+    <div class="login-form" id="loginForm">
+      <h2>Login</h2>
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button onclick="login()">Login</button>
+    </div>
+
+    <div class="booking-section" id="bookingSection" style="display:none;">
+      <h2>Select Movie</h2>
+      <select id="movieSelect" onchange="changeMovie()">
+        <option value="Avengers">Avengers</option>
+        <option value="Inception">Inception</option>
+        <option value="Interstellar">Interstellar</option>
+      </select>
+
+      <h2>Select Movie Time</h2>
+      <div class="movie-time"><input type="radio" name="time" value="10:00 AM" onclick="changeTime()"> 10:00 AM</div>
+      <div class="movie-time"><input type="radio" name="time" value="1:00 PM" onclick="changeTime()"> 1:00 PM</div>
+      <div class="movie-time"><input type="radio" name="time" value="4:00 PM" onclick="changeTime()"> 4:00 PM</div>
+      <div class="movie-time"><input type="radio" name="time" value="7:00 PM" onclick="changeTime()"> 7:00 PM</div>
+
+      <div class="pricing">
+        <strong>Total Price: </strong><span id="price">₹0</span>
+      </div>
+
+      <div class="seats-view" id="seatGrid"></div>
+
+      <div class="confirmation" id="confirmation"></div>
+
+      <button onclick="bookTicket()">Book Ticket</button>
+      <button class="exit-button" onclick="exitSite()">Exit</button>
+    </div>
+  </div>
+
+  <script>
+    const seatPrice = 250;
+    let totalSeats = 20;
+    let selectedSeats = [];
+
+    const bookings = {
+      "Avengers": {
+        "10:00 AM": [3, 7, 12],
+        "1:00 PM": [5, 8, 13],
+        "4:00 PM": [6, 9, 14],
+        "7:00 PM": [2, 10, 15]
+      },
+      "Inception": {
+        "10:00 AM": [1, 4, 9],
+        "1:00 PM": [5, 12, 15],
+        "4:00 PM": [2, 7, 10],
+        "7:00 PM": [3, 6, 11]
+      },
+      "Interstellar": {
+        "10:00 AM": [3, 5, 8],
+        "1:00 PM": [7, 11, 14],
+        "4:00 PM": [1, 4, 12],
+        "7:00 PM": [6, 9, 16]
+      }
+    };
+
+    function login() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      if (username && password) {
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("bookingSection").style.display = "block";
+        displaySeats("Avengers", "10:00 AM");
+      } else {
+        alert("Please enter username and password");
+      }
+    }
+
+    function changeMovie() {
+      const selectedMovie = document.getElementById("movieSelect").value;
+      const selectedTime = getSelectedTime();
+      displaySeats(selectedMovie, selectedTime);
+    }
+
+    function changeTime() {
+      const selectedMovie = document.getElementById("movieSelect").value;
+      const selectedTime = getSelectedTime();
+      displaySeats(selectedMovie, selectedTime);
+    }
+
+    function getSelectedTime() {
+      const times = document.getElementsByName("time");
+      for (const time of times) {
+        if (time.checked) {
+          return time.value;
+        }
+      }
+      return "10:00 AM";
+    }
+
+    function displaySeats(movie, time) {
+      const seatGrid = document.getElementById("seatGrid");
+      seatGrid.innerHTML = "";
+      const bookedSeats = bookings[movie][time];
+      for (let i = 1; i <= totalSeats; i++) {
+        const seat = document.createElement("div");
+        seat.className = "seat";
+        seat.textContent = i;
+        if (bookedSeats.includes(i)) {
+          seat.classList.add("booked");
+        } else {
+          seat.onclick = () => toggleSeatSelection(i, seat);
+        }
+        if (selectedSeats.includes(i)) {
+          seat.classList.add("selected");
+        }
+        seatGrid.appendChild(seat);
+      }
+      updatePrice();
+    }
+
+    function toggleSeatSelection(seatNumber, seatElement) {
+      if (selectedSeats.includes(seatNumber)) {
+        selectedSeats = selectedSeats.filter(num => num !== seatNumber);
+        seatElement.classList.remove("selected");
+      } else {
+        selectedSeats.push(seatNumber);
+        seatElement.classList.add("selected");
+      }
+      updatePrice();
+    }
+
+    function updatePrice() {
+      document.getElementById("price").textContent = "₹" + (selectedSeats.length * seatPrice);
+    }
+
+    function bookTicket() {
+      const selectedMovie = document.getElementById("movieSelect").value;
+      const selectedTime = getSelectedTime();
+
+      if (selectedSeats.length === 0) {
+        alert("Please select at least one seat");
+        return;
+      }
+
+      bookings[selectedMovie][selectedTime].push(...selectedSeats);
+
+      const confirmation = `
+        Booking Confirmed!\n
+        Movie: ${selectedMovie}\n
+        Time: ${selectedTime}\n
+        Seats: ${selectedSeats.join(", ")}\n
+        Total: ₹${selectedSeats.length * seatPrice}
+      `;
+      document.getElementById("confirmation").innerHTML = `<pre>${confirmation}</pre>`;
+
+      selectedSeats = [];
+      displaySeats(selectedMovie, selectedTime);
+    }
+
+    function exitSite() {
+      if (confirm("Are you sure you want to sign out?")) {
+        selectedSeats = [];
+        document.getElementById("bookingSection").style.display = "none";
+        document.getElementById("loginForm").style.display = "block";
+        document.getElementById("username").value = "";
+        document.getElementById("password").value = "";
+        document.getElementById("confirmation").innerHTML = "";
+        document.getElementById("price").textContent = "₹0";
+      }
+    }
+  </script>
+</body>
+</html>
